@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { FormEvent, ReactNode, WheelEvent } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import {
   Heart,
   Pencil,
@@ -36,6 +36,13 @@ import type {
   Gender,
   RelationType,
 } from '@/types'
+
+const MIN_ZOOM = 0.5
+const MAX_ZOOM = 1.8
+
+function clampZoom(value: number) {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
+}
 
 const emptyMember: FamilyMemberInput = {
   fullName: '',
@@ -276,7 +283,7 @@ export function FamilyTreePage() {
             <div>
               <CardTitle className="text-base">Vanshavali</CardTitle>
               <CardDescription>
-                Zoom and pan the tree. Click a person to inspect or edit.
+                Pinch to zoom and drag to pan. Tap a person to edit.
               </CardDescription>
             </div>
             {tree && tree.tree.length > 0 && (
@@ -285,7 +292,7 @@ export function FamilyTreePage() {
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.1).toFixed(2))))}
+                  onClick={() => setZoom((z) => clampZoom(Number((z - 0.1).toFixed(2))))}
                   aria-label="Zoom out"
                 >
                   <ZoomOut />
@@ -297,7 +304,7 @@ export function FamilyTreePage() {
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  onClick={() => setZoom((z) => Math.min(1.8, Number((z + 0.1).toFixed(2))))}
+                  onClick={() => setZoom((z) => clampZoom(Number((z + 0.1).toFixed(2))))}
                   aria-label="Zoom in"
                 >
                   <ZoomIn />
@@ -750,6 +757,13 @@ function RelationGroup({
   )
 }
 
+type PinchGesture = {
+  distance: number
+  zoom: number
+  pan: { x: number; y: number }
+  mid: { x: number; y: number }
+}
+
 function TreeViewport({
   zoom,
   onZoomChange,
@@ -759,51 +773,205 @@ function TreeViewport({
   onZoomChange: (zoom: number) => void
   children: ReactNode
 }) {
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLDivElement>(null)
   const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [gesturing, setGesturing] = useState(false)
   const dragging = useRef(false)
   const last = useRef({ x: 0, y: 0 })
+  const pointers = useRef(new Map<number, { x: number; y: number }>())
+  const pinchRef = useRef<PinchGesture | null>(null)
+  const zoomRef = useRef(zoom)
+  const panRef = useRef(pan)
+  const onZoomChangeRef = useRef(onZoomChange)
 
-  function onWheel(e: WheelEvent<HTMLDivElement>) {
-    if (!(e.ctrlKey || e.metaKey)) return
-    e.preventDefault()
-    const next = e.deltaY > 0 ? zoom - 0.08 : zoom + 0.08
-    onZoomChange(Math.min(1.8, Math.max(0.5, Number(next.toFixed(2)))))
-  }
+  zoomRef.current = zoom
+  panRef.current = pan
+  onZoomChangeRef.current = onZoomChange
+
+  useEffect(() => {
+    const el = viewportRef.current
+    const canvas = canvasRef.current
+    if (!el || !canvas) return
+
+    function touchDistance(touches: TouchList) {
+      const a = touches[0]
+      const b = touches[1]
+      return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+    }
+
+    function touchMidpoint(touches: TouchList) {
+      return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2,
+      }
+    }
+
+    function layoutCenter() {
+      const viewportRect = el!.getBoundingClientRect()
+      const style = getComputedStyle(el!)
+      const borderLeft = Number.parseFloat(style.borderLeftWidth) || 0
+      const borderTop = Number.parseFloat(style.borderTopWidth) || 0
+      return {
+        x: viewportRect.left + borderLeft + canvas!.offsetLeft + canvas!.offsetWidth / 2,
+        y: viewportRect.top + borderTop + canvas!.offsetTop + canvas!.offsetHeight / 2,
+      }
+    }
+
+    function beginPinch(touches: TouchList) {
+      dragging.current = false
+      pinchRef.current = {
+        distance: touchDistance(touches),
+        zoom: zoomRef.current,
+        pan: { ...panRef.current },
+        mid: touchMidpoint(touches),
+      }
+      setGesturing(true)
+    }
+
+    function applyPinch(touches: TouchList) {
+      const start = pinchRef.current
+      if (!start || start.distance <= 0) return
+      const distance = touchDistance(touches)
+      const midpoint = touchMidpoint(touches)
+      const nextZoom = clampZoom(start.zoom * (distance / start.distance))
+      const ratio = start.zoom === 0 ? 1 : nextZoom / start.zoom
+      const center = layoutCenter()
+      const nextPan = {
+        x:
+          (start.mid.x - center.x) * (1 - ratio) +
+          start.pan.x * ratio +
+          (midpoint.x - start.mid.x),
+        y:
+          (start.mid.y - center.y) * (1 - ratio) +
+          start.pan.y * ratio +
+          (midpoint.y - start.mid.y),
+      }
+      panRef.current = nextPan
+      setPan(nextPan)
+      onZoomChangeRef.current(nextZoom)
+    }
+
+    function onTouchStart(event: TouchEvent) {
+      if (event.touches.length === 2) {
+        event.preventDefault()
+        beginPinch(event.touches)
+      }
+    }
+
+    function onTouchMove(event: TouchEvent) {
+      if (event.touches.length >= 2 && pinchRef.current) {
+        event.preventDefault()
+        applyPinch(event.touches)
+      }
+    }
+
+    function onTouchEnd(event: TouchEvent) {
+      if (event.touches.length >= 2) {
+        beginPinch(event.touches)
+        return
+      }
+      pinchRef.current = null
+      setGesturing(false)
+      if (event.touches.length === 1) {
+        dragging.current = true
+        last.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }
+      }
+    }
+
+    function onWheel(event: WheelEvent) {
+      if (!(event.ctrlKey || event.metaKey)) return
+      event.preventDefault()
+      const step = event.deltaY > 0 ? -0.08 : 0.08
+      onZoomChangeRef.current(clampZoom(zoomRef.current + step))
+    }
+
+    function onGesture(event: Event) {
+      event.preventDefault()
+    }
+
+    function onPointerDownCapture(event: PointerEvent) {
+      pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      if (pointers.current.size >= 2) dragging.current = false
+    }
+
+    function onPointerUpCapture(event: PointerEvent) {
+      pointers.current.delete(event.pointerId)
+    }
+
+    const touchOpts = { passive: false, capture: true } as const
+    el.addEventListener('touchstart', onTouchStart, touchOpts)
+    el.addEventListener('touchmove', onTouchMove, touchOpts)
+    el.addEventListener('touchend', onTouchEnd, touchOpts)
+    el.addEventListener('touchcancel', onTouchEnd, touchOpts)
+    el.addEventListener('wheel', onWheel, { passive: false })
+    el.addEventListener('gesturestart', onGesture, { passive: false })
+    el.addEventListener('gesturechange', onGesture, { passive: false })
+    el.addEventListener('pointerdown', onPointerDownCapture, true)
+    el.addEventListener('pointerup', onPointerUpCapture, true)
+    el.addEventListener('pointercancel', onPointerUpCapture, true)
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart, touchOpts)
+      el.removeEventListener('touchmove', onTouchMove, touchOpts)
+      el.removeEventListener('touchend', onTouchEnd, touchOpts)
+      el.removeEventListener('touchcancel', onTouchEnd, touchOpts)
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('gesturestart', onGesture)
+      el.removeEventListener('gesturechange', onGesture)
+      el.removeEventListener('pointerdown', onPointerDownCapture, true)
+      el.removeEventListener('pointerup', onPointerUpCapture, true)
+      el.removeEventListener('pointercancel', onPointerUpCapture, true)
+    }
+  }, [])
 
   return (
     <div
+      ref={viewportRef}
       className="tree-viewport relative h-[min(70vh,640px)] overflow-hidden rounded-2xl border"
-      onWheel={onWheel}
       onPointerDown={(e) => {
         if (e.button !== 0) return
+        if (pointers.current.size >= 2 || pinchRef.current) {
+          dragging.current = false
+          return
+        }
         dragging.current = true
         last.current = { x: e.clientX, y: e.clientY }
         e.currentTarget.setPointerCapture(e.pointerId)
       }}
       onPointerMove={(e) => {
+        if (pinchRef.current || pointers.current.size >= 2) return
         if (!dragging.current) return
         const dx = e.clientX - last.current.x
         const dy = e.clientY - last.current.y
         last.current = { x: e.clientX, y: e.clientY }
-        setPan((p) => ({ x: p.x + dx, y: p.y + dy }))
+        const next = { x: panRef.current.x + dx, y: panRef.current.y + dy }
+        panRef.current = next
+        setPan(next)
       }}
       onPointerUp={(e) => {
-        dragging.current = false
-        e.currentTarget.releasePointerCapture(e.pointerId)
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+        }
+        const remaining = [...pointers.current.values()]
+        dragging.current = remaining.length === 1
+        if (remaining.length === 1) last.current = { ...remaining[0] }
       }}
       onPointerCancel={() => {
         dragging.current = false
       }}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center p-2">
-        <span className="rounded-full border bg-card/90 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur">
-          Drag to pan · Ctrl/⌘ + scroll to zoom
+        <span className="max-w-[calc(100%-1rem)] rounded-full border bg-card/90 px-3 py-1 text-center text-[11px] font-medium leading-snug text-muted-foreground shadow-sm backdrop-blur">
+          Drag to pan · Pinch or Ctrl/⌘ + scroll to zoom
         </span>
       </div>
       <div
+        ref={canvasRef}
         className="tree-canvas flex min-h-full min-w-full origin-center items-start justify-center p-10 pt-14"
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transition: gesturing ? 'none' : undefined,
         }}
       >
         <div className="flex flex-col items-center gap-10">{children}</div>
