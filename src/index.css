@@ -1,0 +1,346 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-brand: var(--brand);
+  --color-sand: var(--sand);
+  --color-cream: var(--cream);
+  --color-mist: var(--mist);
+}
+
+/*
+  Primary blue + off-white light / metallic grey-black dark
+  0B5CAD primary blue
+  FAFAF8 off-white
+  121417 / 1C1F24 / 2A2E34 metallic grey-black
+*/
+:root {
+  --radius: 1rem;
+  --brand: #0b5cad;
+  --sand: #8ec5e8;
+  --cream: #fafaf8;
+  --mist: #aec4d4;
+
+  --background: #fafaf8;
+  --foreground: #1a1d21;
+  --card: #ffffff;
+  --card-foreground: #1a1d21;
+  --popover: #ffffff;
+  --popover-foreground: #1a1d21;
+  --primary: #0b5cad;
+  --primary-foreground: #fafaf8;
+  --secondary: #e8eef3;
+  --secondary-foreground: #1a1d21;
+  --muted: #f0f1ef;
+  --muted-foreground: #5c6570;
+  --accent: #d6e8f5;
+  --accent-foreground: #0b5cad;
+  --destructive: #c62828;
+  --border: color-mix(in srgb, #cfd6dc 80%, #0b5cad 8%);
+  --input: #eef1f4;
+  --ring: #0b5cad;
+  --chart-1: #0b5cad;
+  --chart-2: #3d8fd1;
+  --chart-3: #aec4d4;
+  --chart-4: #8ec5e8;
+  --chart-5: #1a1d21;
+  --glass: color-mix(in srgb, #fafaf8 58%, transparent);
+  --glass-border: color-mix(in srgb, #d7dde3 70%, white);
+  --glow: color-mix(in srgb, #0b5cad 14%, transparent);
+}
+
+.dark {
+  --brand: #4aa3e8;
+  --sand: #8ec5e8;
+  --cream: #fafaf8;
+  --mist: #aec4d4;
+
+  --background: #121417;
+  --foreground: #e8eaed;
+  --card: #1c1f24;
+  --card-foreground: #e8eaed;
+  --popover: #1c1f24;
+  --popover-foreground: #e8eaed;
+  --primary: #4aa3e8;
+  --primary-foreground: #0a0c0f;
+  --secondary: #2a2e34;
+  --secondary-foreground: #e8eaed;
+  --muted: #22262c;
+  --muted-foreground: #9aa3ad;
+  --accent: #2a2e34;
+  --accent-foreground: #8ec5e8;
+  --destructive: #ef6b6b;
+  --border: color-mix(in srgb, #3a4048 75%, #4aa3e8 12%);
+  --input: #2a2e34;
+  --ring: #4aa3e8;
+  --chart-1: #4aa3e8;
+  --chart-2: #aec4d4;
+  --chart-3: #3d8fd1;
+  --chart-4: #8ec5e8;
+  --chart-5: #e8eaed;
+  --glass: color-mix(in srgb, #1c1f24 62%, transparent);
+  --glass-border: color-mix(in srgb, #4a515b 55%, #4aa3e8 18%);
+  --glow: color-mix(in srgb, #4aa3e8 16%, transparent);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans antialiased;
+    cursor: default;
+  }
+
+  body {
+    @apply m-0 min-h-screen bg-background text-foreground transition-colors duration-300;
+    background-image:
+      radial-gradient(circle at 8% -8%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 38%),
+      radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--mist) 18%, transparent), transparent 34%),
+      linear-gradient(180deg, #ffffff, var(--background) 48%, #f3f4f2);
+  }
+
+  .dark body,
+  html.dark body {
+    background-image:
+      radial-gradient(circle at 12% -8%, color-mix(in srgb, #4aa3e8 18%, transparent), transparent 40%),
+      radial-gradient(circle at 88% 4%, color-mix(in srgb, #8a939e 10%, transparent), transparent 36%),
+      linear-gradient(180deg, #0e1013, #121417 46%, #1a1d21);
+  }
+
+  a,
+  button,
+  [role='button'],
+  summary {
+    cursor: pointer;
+  }
+
+  a:hover,
+  button:hover,
+  [role='button']:hover {
+    cursor: pointer;
+  }
+
+  input,
+  textarea,
+  select {
+    cursor: text;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.03em;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(18px) saturate(1.2);
+    box-shadow:
+      0 10px 30px var(--glow),
+      inset 0 1px 0 color-mix(in srgb, white 35%, transparent);
+  }
+
+  .glass-nav {
+    background: color-mix(in srgb, var(--cream) 42%, transparent);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(16px) saturate(1.25);
+    box-shadow:
+      0 8px 24px var(--glow),
+      inset 0 1px 0 color-mix(in srgb, white 40%, transparent);
+  }
+
+  .dark .glass-nav {
+    background: color-mix(in srgb, #1c1f24 58%, transparent);
+  }
+
+  .nav-chip {
+    @apply inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition-all duration-200;
+  }
+
+  .nav-chip:hover {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--sand) 55%, transparent);
+    color: var(--foreground);
+    box-shadow: 0 8px 18px var(--glow);
+  }
+
+  .nav-chip-active {
+    background: var(--brand);
+    color: var(--cream);
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--brand) 28%, transparent);
+  }
+
+  .dark .nav-chip-active {
+    background: var(--brand);
+    color: #0a0c0f;
+  }
+
+  .theme-toggle {
+    @apply relative inline-flex h-9 w-[4.5rem] items-center rounded-full border p-1 transition-all duration-300;
+    border-color: var(--glass-border);
+    background: color-mix(in srgb, var(--sand) 35%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, white 35%, transparent);
+  }
+
+  .theme-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 10px 20px var(--glow),
+      inset 0 1px 0 color-mix(in srgb, white 35%, transparent);
+  }
+
+  .theme-toggle-thumb {
+    @apply absolute top-1 left-1 grid size-7 place-items-center rounded-full transition-all duration-300;
+    background: var(--brand);
+    color: var(--cream);
+    box-shadow: 0 6px 14px color-mix(in srgb, var(--brand) 35%, transparent);
+  }
+
+  .dark .theme-toggle-thumb {
+    transform: translateX(1.65rem);
+    background: var(--brand);
+    color: #0a0c0f;
+  }
+
+  .cursor-glow {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cursor-glow::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: auto;
+    width: 140px;
+    height: 140px;
+    border-radius: 999px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--mist) 35%, transparent), transparent 70%);
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    transition: opacity 200ms ease;
+    left: var(--mx, 50%);
+    top: var(--my, 50%);
+  }
+
+  .cursor-glow:hover::after {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  .plot-iso {
+    transform: perspective(800px) rotateX(48deg) rotateZ(-18deg);
+    transform-style: preserve-3d;
+    animation: floaty 5s ease-in-out infinite;
+  }
+}
+
+.tree-viewport {
+  cursor: grab;
+  background:
+    radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 42%),
+    radial-gradient(circle at 86% 8%, color-mix(in srgb, var(--mist) 14%, transparent), transparent 38%),
+    linear-gradient(180deg, #ffffff, #f3f4f2);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 55%, transparent);
+}
+
+.dark .tree-viewport {
+  background:
+    radial-gradient(circle at 18% 12%, color-mix(in srgb, #4aa3e8 18%, transparent), transparent 42%),
+    radial-gradient(circle at 86% 8%, color-mix(in srgb, #8a939e 10%, transparent), transparent 38%),
+    linear-gradient(180deg, #0e1013, #1c1f24);
+}
+
+.tree-viewport:active {
+  cursor: grabbing;
+}
+
+.tree-canvas {
+  transition: transform 120ms ease-out;
+  will-change: transform;
+}
+
+.tree-stem {
+  width: 2px;
+  height: 28px;
+  background: color-mix(in srgb, var(--sand) 55%, var(--brand));
+  border-radius: 999px;
+}
+
+.tree-stem.short {
+  height: 20px;
+}
+
+.tree-child {
+  position: relative;
+}
+
+.tree-elbow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: color-mix(in srgb, var(--sand) 55%, var(--brand));
+}
+
+.tree-elbow.first {
+  left: 50%;
+}
+
+.tree-elbow.last {
+  right: 50%;
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: perspective(800px) rotateX(48deg) rotateZ(-18deg) translateY(0);
+  }
+  50% {
+    transform: perspective(800px) rotateX(48deg) rotateZ(-18deg) translateY(-8px);
+  }
+}
